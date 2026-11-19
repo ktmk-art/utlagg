@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Utläggskollen</title>
+<script>
+  /* ============================================================
+     ENDA RADEN DU BEHÖVER ÄNDRA:
+     Klistra in webbadressen till ditt Google-skript mellan citattecknen.
+     Lämnar du den tom körs sidan i demoläge (sparas bara i din webbläsare).
+     ============================================================ */
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwQYsSS4SB24qFGsWdlxiX1GpPEvNhmV3xJ8SXVPXQ7RNdThXs_xbFVTGQb6CBQMfQXbg/exec";
+</script>
+<style>
+  :root{
+    --bg:#f4f1ea; --card:#fffdf8; --ink:#1d2a26; --muted:#6b756f; --line:#e3ddd0;
+    --accent:#1f6f5c; --accent-2:#e7f1ec; --warn:#b4472f; --warn-2:#f8e7e2; --gold:#c8962e;
+    --r:14px; --shadow:0 1px 2px rgba(29,42,38,.06),0 6px 24px rgba(29,42,38,.06);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.45 ui-sans-serif,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+  .wrap{max-width:760px;margin:0 auto;padding:20px 16px 80px}
+  header{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin:8px 0 18px}
+  .brand{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  h1{font-family:Georgia,"Iowan Old Style","Times New Roman",serif;font-weight:600;font-size:34px;margin:2px 0 0;line-height:1.1}
+  h2{font-size:15px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 12px;font-weight:700}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:18px;margin-bottom:16px}
+  label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin:0 0 5px}
+  input,select{width:100%;font:inherit;color:inherit;background:#fff;border:1px solid var(--line);border-radius:10px;padding:11px 12px;outline:none}
+  input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-2)}
+  .row{display:grid;gap:12px;margin-bottom:12px}
+  .c2{grid-template-columns:1fr 1fr} .c3{grid-template-columns:1.4fr .8fr 1fr}
+  @media (max-width:560px){.c2,.c3{grid-template-columns:1fr 1fr}.c3 .span{grid-column:1/-1}}
+  button{font:inherit;font-weight:600;border:0;border-radius:10px;padding:11px 16px;cursor:pointer;background:var(--accent);color:#fff}
+  button:disabled{opacity:.5;cursor:default}
+  button.ghost{background:transparent;color:var(--accent);border:1px solid var(--line)}
+  button.small{padding:6px 10px;font-size:13px}
+  button.danger{background:var(--warn-2);color:var(--warn)}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 12px;font-size:14px;cursor:pointer;user-select:none}
+  .chip input{display:none}
+  .chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .ratebox{background:var(--accent-2);border-radius:10px;padding:10px 12px;font-size:14px;color:var(--accent);margin-top:6px;min-height:20px}
+  .ratebox.err{background:var(--warn-2);color:var(--warn)}
+  .muted{color:var(--muted)} .small{font-size:13px}
+  .exp{display:grid;grid-template-columns:1fr auto;gap:4px 12px;padding:12px 0;border-top:1px solid var(--line)}
+  .exp:first-child{border-top:0}
+  .exp .t{font-weight:600}
+  .exp .a{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+  .exp .m{font-size:13px;color:var(--muted)}
+  .exp .x{text-align:right}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px}
+  .stat b{display:block;font-size:20px;font-variant-numeric:tabular-nums}
+  .stat span{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+  table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+  td{padding:8px 0;border-top:1px solid var(--line)} tr:first-child td{border-top:0}
+  td.n{text-align:right}
+  .pos{color:var(--accent);font-weight:700} .neg{color:var(--warn);font-weight:700}
+  .pay{display:flex;align-items:center;gap:10px;padding:10px 12px;background:#fff;border:1px solid var(--line);border-radius:10px;margin-top:8px}
+  .pay .arrow{color:var(--gold);font-weight:700}
+  .pay .amt{margin-left:auto;font-weight:700;font-variant-numeric:tabular-nums}
+  .banner{background:#fff6dc;border:1px solid #f0dc9c;color:#7a5a10;border-radius:10px;padding:10px 12px;font-size:14px;margin-bottom:16px}
+  .linkbox{display:flex;gap:8px} .linkbox input{font-size:14px}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:10px;font-size:14px;opacity:0;transition:.25s;pointer-events:none}
+  .toast.show{opacity:1}
+  .hidden{display:none!important}
+  .addp{display:flex;gap:8px;margin-top:10px} .addp input{max-width:220px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ===== Startsida: skapa en resa ===== -->
+  <section id="start" class="hidden">
+    <header><div><div class="brand">Utläggskollen</div><h1>Dela på kostnaderna</h1></div></header>
+    <div class="card">
+      <h2>Ny resa eller event</h2>
+      <div class="row"><div>
+        <label for="nyResa">Namn</label>
+        <input id="nyResa" placeholder="t.ex. England november 2026" maxlength="50">
+      </div></div>
+      <button id="skapa">Skapa länk</button>
+      <div id="nyLank" class="hidden" style="margin-top:16px">
+        <label>Skicka den här länken till alla som är med</label>
+        <div class="linkbox"><input id="lankText" readonly><button class="ghost" id="kopiera">Kopiera</button></div>
+        <p style="margin:12px 0 0"><a id="oppna" href="#">Öppna resan →</a></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Resesida ===== -->
+  <section id="resa" class="hidden">
+    <header>
+      <div><div class="brand">Utläggskollen</div><h1 id="titel">Resa</h1></div>
+      <button class="ghost small" id="delaLank">Kopiera länk</button>
+    </header>
+    <div id="demo" class="banner hidden">Demoläge: utläggen sparas bara i den här webbläsaren. Följ installationsguiden för att koppla in Google-arket.</div>
+
+    <div class="stats">
+      <div class="stat"><span>Totalt</span><b id="sTot">–</b></div>
+      <div class="stat"><span>Utlägg</span><b id="sAnt">–</b></div>
+      <div class="stat"><span>Snitt/person</span><b id="sPer">–</b></div>
+    </div>
+
+    <div class="card">
+      <h2>Vilka är med?</h2>
+      <div class="chips" id="personer"></div>
+      <div class="addp">
+        <input id="nyPerson" placeholder="Lägg till namn" maxlength="40">
+        <button class="ghost" id="laggPerson">Lägg till</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Lägg till utlägg</h2>
+      <div class="row c2">
+        <div><label for="betalare">Vem betalade?</label><select id="betalare"></select></div>
+        <div><label for="datum">Datum</label><input id="datum" type="date"></div>
+      </div>
+      <div class="row"><div>
+        <label for="beskr">Vad?</label>
+        <input id="beskr" placeholder="t.ex. Middag på puben" maxlength="120">
+      </div></div>
+      <div class="row c3">
+        <div class="span"><label for="belopp">Belopp</label><input id="belopp" inputmode="decimal" placeholder="0,00"></div>
+        <div><label for="valuta">Valuta</label><select id="valuta"></select></div>
+        <div><label for="kurs">Kurs till SEK</label><input id="kurs" inputmode="decimal"></div>
+      </div>
+      <div class="ratebox" id="kursInfo"></div>
+      <div style="margin:14px 0 6px;display:flex;justify-content:space-between;align-items:center">
+        <label style="margin:0">Delas av</label>
+        <span><button class="ghost small" id="alla">Alla</button> <button class="ghost small" id="ingen">Ingen</button></span>
+      </div>
+      <div class="chips" id="delas"></div>
+      <p class="small muted" id="forhand" style="margin:10px 0 14px"></p>
+      <button id="spara">Spara utlägg</button>
+    </div>
+
+    <div class="card">
+      <h2>Avräkning – vem swishar till vem</h2>
+      <div id="betalningar"></div>
+      <details style="margin-top:14px"><summary class="small muted" style="cursor:pointer">Visa saldo per person</summary>
+        <table id="saldo" style="margin-top:8px"></table>
+      </details>
+    </div>
+
+    <div class="card">
+      <h2>Alla utlägg</h2>
+      <div id="lista"></div>
+    </div>
+    <p class="small muted" style="text-align:center">Kurserna hämtas från Mastercard i första hand, Visa i andra och ECB som reserv. Du kan alltid skriva in en egen kurs.</p>
+  </section>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+  const $ = id => document.getElementById(id);
+  const VALUTOR = ["SEK","EUR","GBP","USD","NOK","DKK","CHF","PLN","CZK","HUF","ISK","TRY","THB","JPY","AUD","CAD","NZD","SGD","HKD","CNY","INR","IDR","MXN","BRL","ZAR","KRW","ILS","PHP","MYR","RON"];
+  const DEMO = !SCRIPT_URL;
+  const fmt = (n, d=2) => new Intl.NumberFormat("sv-SE",{minimumFractionDigits:d,maximumFractionDigits:d}).format(n);
+  const kr = n => fmt(n, Math.abs(n) >= 1000 ? 0 : 2) + " kr";
+  const tal = s => { const n = parseFloat(String(s).replace(/\s/g,"").replace(",", ".")); return isFinite(n) ? n : NaN; };
+  const idag = () => new Date(Date.now() - new Date().getTimezoneOffset()*60000).toISOString().slice(0,10);
+  const slugga = s => s.toLowerCase().replace(/[åä]/g,"a").replace(/ö/g,"o").replace(/é/g,"e")
+      .replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,50);
+  function toast(t){ const e=$("toast"); e.textContent=t; e.classList.add("show"); clearTimeout(toast.t); toast.t=setTimeout(()=>e.classList.remove("show"),2200); }
+  const lagra = { get(k,d){ try{ const v=localStorage.getItem(k); return v==null?d:JSON.parse(v);}catch(e){return d;} },
+                  set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} } };
+
+  /* ---------- Backend (Google-skript eller demo) ---------- */
+  const api = {
+    async lista(resa){
+      if (DEMO) return lagra.get("demo_"+resa, {utlagg:[], personer:[]});
+      const r = await fetch(SCRIPT_URL + "?action=list&resa=" + encodeURIComponent(resa));
+      return kolla(await r.json());
+    },
+    async post(body){
+      if (DEMO) return demoPost(body);
+      const r = await fetch(SCRIPT_URL, {method:"POST", body: JSON.stringify(body)}); // text/plain = ingen CORS-preflight
+      return kolla(await r.json());
+    },
+    async kurs(v){
+      if (v === "SEK") return {kurs:1, kalla:"SEK", datum:idag()};
+      if (!DEMO) {
+        try { return kolla(await (await fetch(SCRIPT_URL + "?action=rate&currency=" + v)).json()); }
+        catch(e) { console.warn(e); }
+      }
+      const r = await fetch("https://api.frankfurter.dev/v1/latest?base=" + v + "&symbols=SEK");
+      const j = await r.json();
+      if (!j.rates || !j.rates.SEK) throw new Error("Ingen kurs");
+      return {kurs:j.rates.SEK, kalla:"ECB", datum:j.date};
+    }
+  };
+  function kolla(j){ if (j && j.error) throw new Error(j.error); return j; }
+  function demoPost(b){
+    const d = lagra.get("demo_"+b.resa, {utlagg:[], personer:[]});
+    const addP = n => { if (n && !d.personer.some(p=>p.toLowerCase()===n.toLowerCase())) d.personer.push(n); };
+    if (b.action === "addPerson") addP(b.namn);
+    if (b.action === "add") { const x=b.expense; d.utlagg.push(Object.assign({}, x, {id:String(Date.now()), skapad:new Date().toISOString(), beloppSEK:Math.round(x.belopp*x.kurs*100)/100})); addP(x.betalare); x.delasAv.forEach(addP); }
+    if (b.action === "delete") d.utlagg = d.utlagg.filter(u=>u.id!==b.id);
+    lagra.set("demo_"+b.resa, d); return d;
+  }
+
+  /* ---------- Avräkning ---------- */
+  function rakna(utlagg, personer){
+    const saldo = {}; personer.forEach(p => saldo[p] = {betalt:0, andel:0});
+    const s = n => saldo[n] || (saldo[n] = {betalt:0, andel:0});
+    utlagg.forEach(u => {
+      s(u.betalare).betalt += u.beloppSEK;
+      const del = u.beloppSEK / u.delasAv.length;
+      u.delasAv.forEach(n => s(n).andel += del);
+    });
+    const netto = Object.keys(saldo).map(n => ({namn:n, belopp: Math.round((saldo[n].betalt - saldo[n].andel)*100)/100}));
+    const plus = netto.filter(x=>x.belopp>0.009).map(x=>({...x})).sort((a,b)=>b.belopp-a.belopp);
+    const minus = netto.filter(x=>x.belopp<-0.009).map(x=>({...x, belopp:-x.belopp})).sort((a,b)=>b.belopp-a.belopp);
+    const bet = [];
+    let i=0, j=0;
+    while (i<minus.length && j<plus.length){
+      const m = Math.min(minus[i].belopp, plus[j].belopp);
+      if (m >= 0.01) bet.push({fran:minus[i].namn, till:plus[j].namn, belopp:Math.round(m*100)/100});
+      minus[i].belopp -= m; plus[j].belopp -= m;
+      if (minus[i].belopp < 0.01) i++;
+      if (plus[j].belopp < 0.01) j++;
+    }
+    return {saldo, netto, bet};
+  }
+  window.__rakna = rakna; // för test
+
+  /* ---------- Startsida ---------- */
+  const params = new URLSearchParams(location.search);
+  const RESA = slugga(params.get("resa") || "");
+  const NAMN = (params.get("namn") || "").slice(0,60);
+
+  function lankFor(slug, namn){
+    const u = new URL(location.href.split("?")[0].split("#")[0]);
+    u.searchParams.set("resa", slug); if (namn) u.searchParams.set("namn", namn);
+    return u.toString();
+  }
+  async function kopiera(text){
+    try { await navigator.clipboard.writeText(text); toast("Länken är kopierad"); }
+    catch(e){ prompt("Kopiera länken:", text); }
+  }
+
+  if (!RESA) {
+    $("start").classList.remove("hidden");
+    $("skapa").onclick = () => {
+      const namn = $("nyResa").value.trim();
+      const slug = slugga(namn);
+      if (!slug) { $("nyResa").focus(); return; }
+      const l = lankFor(slug + "-" + Math.random().toString(36).slice(2,6), namn);
+      $("lankText").value = l; $("oppna").href = l; $("nyLank").classList.remove("hidden");
+    };
+    $("nyResa").onkeydown = e => { if (e.key==="Enter") $("skapa").click(); };
+    $("kopiera").onclick = () => kopiera($("lankText").value);
+    return;
+  }
+
+  /* ---------- Resesida ---------- */
+  $("resa").classList.remove("hidden");
+  $("titel").textContent = NAMN || RESA.replace(/-[a-z0-9]{4}$/,"").replace(/-/g," ");
+  document.title = $("titel").textContent + " – Utläggskollen";
+  if (DEMO) $("demo").classList.remove("hidden");
+  $("delaLank").onclick = () => kopiera(location.href);
+
+  let data = {utlagg:[], personer:[]};
+  let valda = null;               // vilka som delar (Set), null = alla
+  let kursKalla = "";
+  const MIG = "jag_"+RESA;
+
+  VALUTOR.forEach(v => { const o=document.createElement("option"); o.value=v; o.textContent=v; $("valuta").appendChild(o); });
+  $("valuta").value = lagra.get("valuta_"+RESA, "SEK");
+  $("datum").value = idag();
+
+  function allaPersoner(){
+    const set = new Map();
+    const add = n => { if (n && !set.has(n.toLowerCase())) set.set(n.toLowerCase(), n); };
+    data.personer.forEach(add);
+    data.utlagg.forEach(u => { add(u.betalare); u.delasAv.forEach(add); });
+    return [...set.values()].sort((a,b)=>a.localeCompare(b,"sv"));
+  }
+
+  function renderPersoner(){
+    const p = allaPersoner();
+    $("personer").innerHTML = "";
+    if (!p.length) $("personer").innerHTML = '<span class="muted small">Inga ännu – lägg till alla som är med nedan.</span>';
+    p.forEach(n => { const c=document.createElement("span"); c.className="chip"; c.textContent=n; $("personer").appendChild(c); });
+
+    const sel = $("betalare"), fore = sel.value || lagra.get(MIG, "");
+    sel.innerHTML = '<option value="">Välj…</option>';
+    p.forEach(n => { const o=document.createElement("option"); o.value=n; o.textContent=n; sel.appendChild(o); });
+    if (p.includes(fore)) sel.value = fore;
+
+    if (valda) valda = new Set([...valda].filter(n=>p.includes(n)));
+    $("delas").innerHTML = "";
+    p.forEach(n => {
+      const on = !valda || valda.has(n);
+      const c = document.createElement("label"); c.className = "chip" + (on?" on":"");
+      c.textContent = n;
+      c.onclick = () => { if (!valda) valda = new Set(p); valda.has(n) ? valda.delete(n) : valda.add(n); renderPersoner(); };
+      $("delas").appendChild(c);
+    });
+    forhand();
+  }
+
+  function delare(){ const p = allaPersoner(); return valda ? p.filter(n=>valda.has(n)) : p; }
+
+  function forhand(){
+    const b = tal($("belopp").value), k = tal($("kurs").value), d = delare();
+    if (b>0 && k>0 && d.length) {
+      const sek = b*k;
+      $("forhand").textContent = `= ${kr(sek)} totalt, ${kr(sek/d.length)} per person (${d.length} st)`;
+    } else $("forhand").textContent = d.length ? `${d.length} personer delar` : "Välj vilka som ska dela";
+  }
+
+  async function uppdateraKurs(){
+    const v = $("valuta").value;
+    lagra.set("valuta_"+RESA, v);
+    const box = $("kursInfo"); box.classList.remove("err");
+    if (v === "SEK") { $("kurs").value = "1"; $("kurs").disabled = true; kursKalla = "SEK"; box.textContent = "Svenska kronor – ingen växling."; forhand(); return; }
+    $("kurs").disabled = false; $("kurs").value = ""; box.textContent = "Hämtar senaste kursen…";
+    try {
+      const r = await api.kurs(v);
+      if ($("valuta").value !== v) return;
+      $("kurs").value = String(Math.round(r.kurs*10000)/10000).replace(".", ",");
+      kursKalla = r.kalla;
+      box.textContent = `1 ${v} = ${fmt(r.kurs,4)} SEK · ${r.kalla}${r.datum ? " · " + r.datum : ""}`;
+    } catch(e) {
+      kursKalla = "Egen";
+      box.classList.add("err"); box.textContent = "Kunde inte hämta kursen – skriv in den själv.";
+    }
+    forhand();
+  }
+  $("kurs").oninput = () => { kursKalla = "Egen"; $("kursInfo").classList.remove("err"); $("kursInfo").textContent = "Egen kurs angiven."; forhand(); };
+  $("valuta").onchange = uppdateraKurs;
+  $("belopp").oninput = forhand;
+  $("alla").onclick = () => { valda = null; renderPersoner(); };
+  $("ingen").onclick = () => { valda = new Set(); renderPersoner(); };
+
+  async function laggPerson(){
+    const n = $("nyPerson").value.trim(); if (!n) return;
+    $("laggPerson").disabled = true;
+    try { data = await api.post({action:"addPerson", resa:RESA, namn:n}); $("nyPerson").value=""; if (valda) valda.add(n); render(); }
+    catch(e){ toast("Fel: " + e.message); }
+    $("laggPerson").disabled = false;
+  }
+  $("laggPerson").onclick = laggPerson;
+  $("nyPerson").onkeydown = e => { if (e.key==="Enter") laggPerson(); };
+
+  $("spara").onclick = async () => {
+    const x = {
+      resa: RESA, betalare: $("betalare").value, datum: $("datum").value,
+      beskrivning: $("beskr").value.trim(), belopp: tal($("belopp").value),
+      valuta: $("valuta").value, kurs: tal($("kurs").value), kurskalla: kursKalla, delasAv: delare()
+    };
+    if (!x.betalare) return toast("Välj vem som betalade");
+    if (!x.beskrivning) return toast("Skriv vad utlägget gällde");
+    if (!(x.belopp>0)) return toast("Ange ett belopp");
+    if (!(x.kurs>0)) return toast("Ange en växelkurs");
+    if (!x.delasAv.length) return toast("Välj vilka som delar");
+    $("spara").disabled = true; $("spara").textContent = "Sparar…";
+    try {
+      data = await api.post({action:"add", expense:x});
+      lagra.set(MIG, x.betalare);
+      $("beskr").value = ""; $("belopp").value = "";
+      render(); toast("Utlägget är sparat");
+    } catch(e){ toast("Kunde inte spara: " + e.message); }
+    $("spara").disabled = false; $("spara").textContent = "Spara utlägg";
+  };
+
+  function render(){
+    renderPersoner();
+    const u = [...data.utlagg].sort((a,b)=> (b.datum||"").localeCompare(a.datum||"") || (b.skapad||"").localeCompare(a.skapad||""));
+    const tot = u.reduce((s,x)=>s+x.beloppSEK,0);
+    const p = allaPersoner();
+    $("sTot").textContent = kr(tot); $("sAnt").textContent = u.length;
+    $("sPer").textContent = p.length ? kr(tot/p.length) : "–";
+
+    const L = $("lista"); L.innerHTML = "";
+    if (!u.length) L.innerHTML = '<p class="muted">Inga utlägg ännu.</p>';
+    u.forEach(x => {
+      const d = document.createElement("div"); d.className = "exp";
+      const t = el("div","t",x.beskrivning);
+      const a = el("div","a",kr(x.beloppSEK));
+      const utl = x.valuta !== "SEK" ? `${fmt(x.belopp)} ${x.valuta} à ${fmt(x.kurs,4)} (${x.kurskalla||"–"}) · ` : "";
+      const m = el("div","m",`${x.betalare} betalade · ${x.datum} · ${utl}delas av ${x.delasAv.join(", ")}`);
+      const xb = el("div","x",""); const btn = el("button","ghost small","Ta bort");
+      btn.onclick = async () => {
+        if (btn.dataset.s !== "1") { btn.dataset.s="1"; btn.textContent="Säker?"; btn.className="danger small"; setTimeout(()=>{btn.dataset.s="";btn.textContent="Ta bort";btn.className="ghost small";},3000); return; }
+        btn.disabled = true;
+        try { data = await api.post({action:"delete", resa:RESA, id:x.id}); render(); toast("Borttaget"); }
+        catch(e){ toast("Fel: " + e.message); btn.disabled=false; }
+      };
+      xb.appendChild(btn);
+      d.append(t,a,m,xb); L.appendChild(d);
+    });
+
+    const r = rakna(data.utlagg, p);
+    const B = $("betalningar"); B.innerHTML = "";
+    if (!data.utlagg.length) B.innerHTML = '<p class="muted">Avräkningen visas här när första utlägget är inlagt.</p>';
+    else if (!r.bet.length) B.innerHTML = '<p class="pos">Alla är kvitt 🎉</p>';
+    r.bet.forEach(b => {
+      const d = el("div","pay","");
+      d.append(el("span","",b.fran), el("span","arrow","→"), el("span","",b.till), el("span","amt",kr(b.belopp)));
+      B.appendChild(d);
+    });
+    const S = $("saldo"); S.innerHTML = "";
+    r.netto.sort((a,b)=>b.belopp-a.belopp).forEach(n => {
+      const tr = document.createElement("tr");
+      const s = r.saldo[n.namn];
+      tr.append(el("td","",n.namn), el("td","n small muted",`betalat ${kr(s.betalt)} · andel ${kr(s.andel)}`),
+                el("td","n "+(n.belopp>0?"pos":n.belopp<0?"neg":""),(n.belopp>0?"+":"")+kr(n.belopp)));
+      S.appendChild(tr);
+    });
+  }
+  function el(tag, cls, text){ const e=document.createElement(tag); if(cls) e.className=cls; e.textContent=text; return e; }
+
+  async function ladda(tyst){
+    try { data = await api.lista(RESA); render(); }
+    catch(e){ if (!tyst) toast("Kunde inte läsa utläggen: " + e.message); }
+  }
+  render(); uppdateraKurs(); ladda();
+  setInterval(() => { if (!document.hidden) ladda(true); }, 30000); // hämta andras nya utlägg
+})();
+</script>
+</body>
+</html>
