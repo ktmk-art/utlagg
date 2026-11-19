@@ -35,6 +35,7 @@ function doPost(e) {
     lock.waitLock(20000);
     const body = JSON.parse(e.postData.contents);
     if (body.action === 'add') return svar(laggTillUtlagg(body.expense));
+    if (body.action === 'update') return svar(andraUtlagg(body.id, body.expense));
     if (body.action === 'delete') return svar(taBortUtlagg(body.resa, body.id));
     if (body.action === 'addPerson') return svar(laggTillPerson(body.resa, body.namn));
     return svar({ error: 'Okänd åtgärd' });
@@ -79,6 +80,13 @@ function rader(sh) {
   });
 }
 
+/** Tal skrivna direkt i arket: tillåt både 12,41 och 12.41 */
+function arkTal(x) {
+  if (typeof x === 'number') return x;
+  const n = parseFloat(String(x == null ? '' : x).replace(/\s/g, '').replace(',', '.'));
+  return isFinite(n) ? n : 0;
+}
+
 function rensaResa(resa) {
   resa = String(resa || '').trim().toLowerCase();
   if (!/^[a-z0-9-]{1,60}$/.test(resa)) throw new Error('Ogiltigt resenamn');
@@ -97,9 +105,11 @@ function lista(resa) {
       return {
         id: String(r.id), skapad: String(r.skapad), datum: String(r.datum),
         betalare: String(r.betalare), beskrivning: String(r.beskrivning),
-        belopp: Number(r.belopp), valuta: String(r.valuta), kurs: Number(r.kurs),
-        kurskalla: String(r.kurskalla), beloppSEK: Number(r.beloppSEK),
-        delasAv: String(r.delasAv).split('|').filter(String)
+        belopp: arkTal(r.belopp), valuta: String(r.valuta).toUpperCase(), kurs: arkTal(r.kurs),
+        kurskalla: String(r.kurskalla),
+        // räknas alltid om, så att ändringar direkt i arket blir rätt
+        beloppSEK: Math.round(arkTal(r.belopp) * arkTal(r.kurs) * 100) / 100,
+        delasAv: String(r.delasAv).split('|').map(function (n) { return n.trim(); }).filter(String)
       };
     });
   const personer = rader(flik(FLIK_PERSONER, PERSON_KOLUMNER))
@@ -121,6 +131,26 @@ function laggTillPerson(resa, namn) {
 }
 
 function laggTillUtlagg(x) {
+  const v = kontrollera(x);
+  const id = Utilities.getUuid();
+  flik(FLIK_UTLAGG, UTLAGG_KOLUMNER).appendRow([id, v.resa, new Date().toISOString()].concat(v.rad));
+  v.namn.forEach(function (n) { laggTillPerson(v.resa, n); });
+  return lista(v.resa);
+}
+
+function andraUtlagg(id, x) {
+  const v = kontrollera(x);
+  const sh = flik(FLIK_UTLAGG, UTLAGG_KOLUMNER);
+  const r = rader(sh).filter(function (r) {
+    return String(r.id) === String(id) && String(r.resa) === v.resa;
+  })[0];
+  if (!r) throw new Error('Utlägget finns inte längre');
+  sh.getRange(r._rad, 4, 1, v.rad.length).setValues([v.rad]); // kolumn D och framåt
+  v.namn.forEach(function (n) { laggTillPerson(v.resa, n); });
+  return lista(v.resa);
+}
+
+function kontrollera(x) {
   const resa = rensaResa(x.resa);
   const belopp = Number(x.belopp);
   const kurs = Number(x.kurs);
@@ -133,17 +163,15 @@ function laggTillUtlagg(x) {
   const betalare = rensaText(x.betalare, 40);
   if (!betalare) throw new Error('Ange vem som betalade');
 
-  const id = Utilities.getUuid();
   const datum = /^\d{4}-\d{2}-\d{2}$/.test(x.datum) ? x.datum
     : Utilities.formatDate(new Date(), 'Europe/Stockholm', 'yyyy-MM-dd');
-  flik(FLIK_UTLAGG, UTLAGG_KOLUMNER).appendRow([
-    id, resa, new Date().toISOString(), datum, betalare, rensaText(x.beskrivning, 120),
-    String(belopp), valuta, String(kurs), rensaText(x.kurskalla, 60),
-    String(Math.round(belopp * kurs * 100) / 100), delasAv.join('|')
-  ]);
-  // se till att alla inblandade finns i personlistan
-  [betalare].concat(delasAv).forEach(function (n) { laggTillPerson(resa, n); });
-  return lista(resa);
+  return {
+    resa: resa,
+    namn: [betalare].concat(delasAv),
+    // kolumn D–L: datum, betalare, beskrivning, belopp, valuta, kurs, kurskalla, beloppSEK, delasAv
+    rad: [datum, betalare, rensaText(x.beskrivning, 120), String(belopp), valuta, String(kurs),
+      rensaText(x.kurskalla, 60), String(Math.round(belopp * kurs * 100) / 100), delasAv.join('|')]
+  };
 }
 
 function taBortUtlagg(resa, id) {

@@ -50,7 +50,7 @@
   .exp .t{font-weight:600}
   .exp .a{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
   .exp .m{font-size:13px;color:var(--muted)}
-  .exp .x{text-align:right}
+  .exp .x{text-align:right;white-space:nowrap}
   .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
   .stat{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px}
   .stat b{display:block;font-size:20px;font-variant-numeric:tabular-nums}
@@ -114,8 +114,8 @@
       </div>
     </div>
 
-    <div class="card">
-      <h2>Lägg till utlägg</h2>
+    <div class="card" id="formKort">
+      <h2 id="formRubrik">Lägg till utlägg</h2>
       <div class="row c2">
         <div><label for="betalare">Vem betalade?</label><select id="betalare"></select></div>
         <div><label for="datum">Datum</label><input id="datum" type="date"></div>
@@ -136,7 +136,7 @@
       </div>
       <div class="chips" id="delas"></div>
       <p class="small muted" id="forhand" style="margin:10px 0 14px"></p>
-      <button id="spara">Spara utlägg</button>
+      <button id="spara">Spara utlägg</button> <button class="ghost hidden" id="avbryt">Avbryt</button>
     </div>
 
     <div class="card">
@@ -202,6 +202,7 @@
     const addP = n => { if (n && !d.personer.some(p=>p.toLowerCase()===n.toLowerCase())) d.personer.push(n); };
     if (b.action === "addPerson") addP(b.namn);
     if (b.action === "add") { const x=b.expense; d.utlagg.push(Object.assign({}, x, {id:String(Date.now()), skapad:new Date().toISOString(), beloppSEK:Math.round(x.belopp*x.kurs*100)/100})); addP(x.betalare); x.delasAv.forEach(addP); }
+    if (b.action === "update") { const x=b.expense; d.utlagg = d.utlagg.map(u => u.id===b.id ? Object.assign({}, u, x, {beloppSEK:Math.round(x.belopp*x.kurs*100)/100}) : u); addP(x.betalare); x.delasAv.forEach(addP); }
     if (b.action === "delete") d.utlagg = d.utlagg.filter(u=>u.id!==b.id);
     lagra.set("demo_"+b.resa, d); return d;
   }
@@ -270,6 +271,7 @@
   let data = {utlagg:[], personer:[]};
   let valda = null;               // vilka som delar (Set), null = alla
   let kursKalla = "";
+  let redigerar = null;            // id för utlägg som ändras
   const MIG = "jag_"+RESA;
 
   VALUTOR.forEach(v => { const o=document.createElement("option"); o.value=v; o.textContent=v; $("valuta").appendChild(o); });
@@ -364,13 +366,46 @@
     if (!x.delasAv.length) return toast("Välj vilka som delar");
     $("spara").disabled = true; $("spara").textContent = "Sparar…";
     try {
-      data = await api.post({action:"add", expense:x});
-      lagra.set(MIG, x.betalare);
-      $("beskr").value = ""; $("belopp").value = "";
-      render(); toast("Utlägget är sparat");
+      const var_ = redigerar;
+      data = await api.post(var_ ? {action:"update", id:var_, expense:x} : {action:"add", expense:x});
+      if (!var_) lagra.set(MIG, x.betalare);
+      avslutaRedigering();
+      render(); toast(var_ ? "Ändringen är sparad" : "Utlägget är sparat");
     } catch(e){ toast("Kunde inte spara: " + e.message); }
-    $("spara").disabled = false; $("spara").textContent = "Spara utlägg";
+    $("spara").disabled = false; $("spara").textContent = redigerar ? "Spara ändringar" : "Spara utlägg";
   };
+
+  function borjaRedigera(x){
+    redigerar = x.id;
+    $("formRubrik").textContent = "Ändra utlägg";
+    $("formKort").style.borderColor = "var(--gold)";
+    $("spara").textContent = "Spara ändringar";
+    $("avbryt").classList.remove("hidden");
+    $("datum").value = x.datum; $("beskr").value = x.beskrivning;
+    $("belopp").value = String(x.belopp).replace(".", ",");
+    $("valuta").value = x.valuta;
+    $("kurs").disabled = x.valuta === "SEK";
+    $("kurs").value = String(x.kurs).replace(".", ",");
+    kursKalla = x.kurskalla || "Egen";
+    $("kursInfo").classList.remove("err");
+    $("kursInfo").textContent = x.valuta === "SEK" ? "Svenska kronor – ingen växling."
+      : `Sparad kurs: 1 ${x.valuta} = ${fmt(x.kurs,4)} SEK · ${kursKalla}. Byt valuta för att hämta ny kurs.`;
+    valda = new Set(x.delasAv);
+    renderPersoner();
+    $("betalare").value = x.betalare;
+    $("formKort").scrollIntoView({behavior:"smooth", block:"start"});
+  }
+  function avslutaRedigering(){
+    const var_ = redigerar;
+    redigerar = null;
+    $("formRubrik").textContent = "Lägg till utlägg";
+    $("formKort").style.borderColor = "";
+    $("spara").textContent = "Spara utlägg";
+    $("avbryt").classList.add("hidden");
+    $("beskr").value = ""; $("belopp").value = ""; $("datum").value = idag();
+    if (var_) { valda = null; $("betalare").value = lagra.get(MIG, ""); renderPersoner(); uppdateraKurs(); }
+  }
+  $("avbryt").onclick = avslutaRedigering;
 
   function render(){
     renderPersoner();
@@ -392,10 +427,13 @@
       btn.onclick = async () => {
         if (btn.dataset.s !== "1") { btn.dataset.s="1"; btn.textContent="Säker?"; btn.className="danger small"; setTimeout(()=>{btn.dataset.s="";btn.textContent="Ta bort";btn.className="ghost small";},3000); return; }
         btn.disabled = true;
-        try { data = await api.post({action:"delete", resa:RESA, id:x.id}); render(); toast("Borttaget"); }
+        try { data = await api.post({action:"delete", resa:RESA, id:x.id}); if (redigerar === x.id) avslutaRedigering(); render(); toast("Borttaget"); }
         catch(e){ toast("Fel: " + e.message); btn.disabled=false; }
       };
-      xb.appendChild(btn);
+      const eb = el("button","ghost small","Ändra");
+      eb.style.marginRight = "6px";
+      eb.onclick = () => borjaRedigera(x);
+      xb.append(eb, btn);
       d.append(t,a,m,xb); L.appendChild(d);
     });
 

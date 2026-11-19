@@ -54,6 +54,7 @@ Alla utlägg syns också i ditt Google-ark (fliken *Utlägg*) om du vill kontrol
 
 ### Bra att veta
 - **Växelkurs:** Sidan hämtar senaste kursen från Mastercard i första hand, Visa i andra och ECB som reserv. Varje kurs jämförs mot ECB, så en felaktig hämtning kan inte slinka igenom. Kursen fylls i automatiskt, men den går alltid att ändra för hand (t.ex. till kursen på kontoutdraget). Under varje utlägg står vilken källa som användes.
-- **Ändra ett utlägg:** Ta bort det och lägg in det igen.
+- **Ändra ett utlägg:** Tryck **Ändra** vid utlägget i listan, justera och tryck **Spara ändringar**.
+- **Ändra direkt i Google-arket** (fliken *Utlägg*) går bra för datum (skrivs `2026-11-14`), betalare, beskrivning, belopp, valuta och kurs. Lämna kolumnerna **id** och **resa** samt rubrikraden orörda. I **delasAv** skiljs namnen åt med `|`, och namnen måste stavas exakt som på sidan. Kolumnen **beloppSEK** behöver du inte bry dig om, eftersom sidan räknar om den själv.
 - **Behörighet:** Alla som har länken kan lägga till och ta bort utlägg. Dela den bara med dem som är med på resan.
 - **Om du ändrar i Code.gs senare:** Gå till **Deploy → Manage deployments** → **penn-ikonen** → under **Version** välj **New version** → **Deploy**. Annars används den gamla koden, och adressen förblir densamma.
